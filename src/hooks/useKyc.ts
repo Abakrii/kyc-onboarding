@@ -28,9 +28,10 @@ import {
   type DraftPatch,
   type KycState,
 } from '../state/kycTypes';
+import { firstStepForRequiredFields } from '../state/selectore';
 import { clearDraft, loadDraft, saveDraft } from '../storage/draftStorage';
 import { isEditable, isTerminal, type KycStep } from '../types/kyc';
-import { validateStep, type FieldError } from '../validation/validator';
+import { validateAll, validateStep, type FieldError } from '../validation/validator';
 
 // How often to re-poll a submitted application until the service resolves it.
 const POLL_INTERVAL_MS = 1500;
@@ -182,10 +183,27 @@ export function useKyc(): KycContextValue {
   }, [state.remoteStatus]);
 
   // ── Async lifecycles ──
+  // The submit pipeline: SAVE_START → saveKycDraft → SUBMIT_START → submit →
+  // SUBMIT_SUCCESS. A save failure stops before submit; either failure lands in
+  // the error state (uiPhase 'error') and is recoverable via `retry`. Once
+  // SUBMIT_SUCCESS lands the app in `submitted`, the polling effect takes over.
   const runSubmit = useCallback(async (): Promise<void> => {
+    dispatch({ type: 'SAVE_START' });
     try {
-      // Push the latest draft to the service, then submit it.
       await saveKycDraft(stateRef.current.draft);
+    } catch (error) {
+      if (!mountedRef.current) {
+        return;
+      }
+      dispatch({ type: 'SAVE_FAILURE', error: toMessage(error) });
+      return;
+    }
+    if (!mountedRef.current) {
+      return;
+    }
+
+    dispatch({ type: 'SUBMIT_START' });
+    try {
       const application = await submitKycApplication();
       if (!mountedRef.current) {
         return;
@@ -217,11 +235,21 @@ export function useKyc(): KycContextValue {
   }, []);
 
   const submit = useCallback(() => {
-    if (!isEditable(stateRef.current.remoteStatus)) {
+    const { draft, remoteStatus } = stateRef.current;
+    if (!isEditable(remoteStatus)) {
+      return;
+    }
+    // Validate the whole application first. If anything is invalid, route to the
+    // earliest step that owns a failing field instead of submitting.
+    const invalid = validateAll(draft, new Date());
+    if (invalid.length > 0) {
+      const step = firstStepForRequiredFields(invalid.map((e) => e.field));
+      if (step) {
+        dispatch({ type: 'GO_TO_STEP', step });
+      }
       return;
     }
     lastOpRef.current = 'submit';
-    dispatch({ type: 'SUBMIT_START' });
     void runSubmit();
   }, [runSubmit]);
 

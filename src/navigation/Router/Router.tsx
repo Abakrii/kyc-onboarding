@@ -8,7 +8,13 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { colors } from '../../components/theme';
 import { useKycContext } from '../../context/kycProvider';
-import { AddressScreen, PersonalInfoScreen, PlaceholderScreen } from '../../screens';
+import {
+  AddressScreen,
+  DocumentScreen,
+  PersonalInfoScreen,
+  PlaceholderScreen,
+  ReviewScreen,
+} from '../../screens';
 import { routerStyles as s } from './Router.styles';
 
 export function Router() {
@@ -28,9 +34,11 @@ export function Router() {
     case 'address':
       return <AddressScreen />;
     case 'document':
+      return <DocumentScreen />;
     case 'review':
+      return <ReviewScreen />;
     case 'status':
-      // TODO: swap in each real step screen as it is built.
+      // TODO: swap in the real status screen when it is built.
       return <PlaceholderScreen />;
     default: {
       // Exhaustiveness guard: a new KycStep won't compile until it's routed.

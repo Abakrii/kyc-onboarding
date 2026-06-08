@@ -15,7 +15,8 @@ import { StepLayout } from '../StepLayout';
 import { personalInfoScreenStyles as s } from './PersonalInfoScreen.styles';
 
 export function PersonalInfoScreen() {
-  const { state, errors, editField, next, goToStep, dismissBanner } = useKycContext();
+  const { state, errors, editField, next, goToStep, dismissBanner, retry } =
+    useKycContext();
   const [showErrors, setShowErrors] = useState(false);
 
   const current = state.draft.personalInfo;
@@ -53,6 +54,7 @@ export function PersonalInfoScreen() {
       }
       banner={state.banner}
       error={state.error}
+      onRetry={retry}
       onDismissBanner={dismissBanner}
       footer={
         <View style={s.footerButton}>

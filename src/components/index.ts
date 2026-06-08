@@ -3,6 +3,12 @@
 // its styles and test (e.g. ./Button/Button.tsx + Button.styles.ts + Button.test.tsx).
 
 export { Button, type ButtonProps, type ButtonVariant } from './Button';
+export { ErrorNotice, type ErrorNoticeProps } from './ErrorNotice';
+export {
+  OptionGroup,
+  type OptionGroupProps,
+  type OptionGroupOption,
+} from './OptionGroup';
 export { TextField, type TextFieldProps } from './TextField';
 export { WizardHeader, type WizardHeaderProps } from './WizardHeader';
 export { colors, spacing, radius, fontSize, fontWeight, theme } from './theme';

@@ -14,7 +14,7 @@ import { StepLayout } from '../StepLayout';
 import { addressScreenStyles as s } from './AddressScreen.styles';
 
 export function AddressScreen() {
-  const { state, errors, editField, next, prev, goToStep, dismissBanner } =
+  const { state, errors, editField, next, prev, goToStep, dismissBanner, retry } =
     useKycContext();
   const [showErrors, setShowErrors] = useState(false);
 
@@ -51,6 +51,7 @@ export function AddressScreen() {
       }
       banner={state.banner}
       error={state.error}
+      onRetry={retry}
       onDismissBanner={dismissBanner}
       footer={
         <>

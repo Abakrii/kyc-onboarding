@@ -4,6 +4,8 @@
 // StepLayout.test.tsx).
 
 export { AddressScreen } from './AddressScreen';
+export { DocumentScreen } from './DocumentScreen';
 export { PersonalInfoScreen } from './PersonalInfoScreen';
 export { PlaceholderScreen } from './PlaceholderScreen';
+export { ReviewScreen } from './ReviewScreen';
 export { StepLayout, type StepLayoutProps } from './StepLayout';

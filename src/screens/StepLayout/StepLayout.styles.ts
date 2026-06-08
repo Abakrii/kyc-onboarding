@@ -34,12 +34,6 @@ export const stepLayoutStyles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.sm,
   },
-  error: {
-    borderColor: colors.error,
-  },
-  errorText: {
-    color: colors.error,
-  },
   banner: {
     borderColor: colors.primary,
   },

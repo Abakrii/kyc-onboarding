@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ErrorNotice } from '../../components';
 import { spacing } from '../../components/theme';
 import { stepLayoutStyles as s } from './StepLayout.styles';
 
@@ -18,6 +19,8 @@ export interface StepLayoutProps {
   banner?: string | null;
   /** Error message (e.g. state.error). Rendered above the banner. */
   error?: string | null;
+  /** When set, the error renders with a Retry action that calls this. */
+  onRetry?: () => void;
   /** Called when the banner's dismiss control is pressed. */
   onDismissBanner?: () => void;
   /** Footer region pinned below the body (e.g. navigation buttons). */
@@ -30,6 +33,7 @@ export function StepLayout({
   header,
   banner,
   error,
+  onRetry,
   onDismissBanner,
   footer,
   children,
@@ -43,11 +47,7 @@ export function StepLayout({
 
       {hasMessages ? (
         <View style={s.messages}>
-          {error ? (
-            <View style={[s.message, s.error]} accessibilityRole="alert">
-              <Text style={[s.messageText, s.errorText]}>{error}</Text>
-            </View>
-          ) : null}
+          {error ? <ErrorNotice message={error} onRetry={onRetry} /> : null}
           {banner ? (
             <View style={[s.message, s.banner]} accessibilityRole="alert">
               <Text style={[s.messageText, s.bannerText]}>{banner}</Text>
