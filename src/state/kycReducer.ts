@@ -13,6 +13,7 @@ import {
 } from '../types/kyc';
 import { canTransition } from './transtion';
 import {
+  canNavigateToStep,
   firstStepForRequiredFields,
   nextStep,
   prevStep,
@@ -156,7 +157,12 @@ export function kycReducer(state: KycState, action: Action): KycState {
     }
 
     case 'GO_TO_STEP':
-      // Free navigation (e.g. back from the review step) — no validation.
+      // Going back to an earlier/current step is free (e.g. review "edit"
+      // links); jumping forward is gated so the user can't skip past a step
+      // whose required fields aren't filled in yet.
+      if (!canNavigateToStep(state.draft, state.draft.currentStep, action.step)) {
+        return { ...state, banner: INCOMPLETE_STEP_BANNER };
+      }
       return {
         ...state,
         draft: { ...state.draft, currentStep: action.step },
