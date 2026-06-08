@@ -4,4 +4,5 @@
 
 export { Button, type ButtonProps, type ButtonVariant } from './Button';
 export { TextField, type TextFieldProps } from './TextField';
+export { WizardHeader, type WizardHeaderProps } from './WizardHeader';
 export { colors, spacing, radius, fontSize, fontWeight, theme } from './theme';
