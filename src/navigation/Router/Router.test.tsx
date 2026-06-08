@@ -32,8 +32,9 @@ describe('Router', () => {
 
     expect(screen.getByTestId('loading-spinner')).toBeTruthy();
 
-    // Bootstrap resolves to not_started → personal_info.
-    await waitFor(() => expect(screen.getByText('Personal information')).toBeTruthy());
+    // Bootstrap resolves to not_started → personal_info → PersonalInfoScreen,
+    // whose first field is the legal name.
+    await waitFor(() => expect(screen.getByLabelText('Legal name')).toBeTruthy());
     expect(screen.queryByTestId('loading-spinner')).toBeNull();
   });
 });

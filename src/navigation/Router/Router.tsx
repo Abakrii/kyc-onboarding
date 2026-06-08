@@ -8,7 +8,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { colors } from '../../components/theme';
 import { useKycContext } from '../../context/kycProvider';
-import { PlaceholderScreen } from '../../screens';
+import { AddressScreen, PersonalInfoScreen, PlaceholderScreen } from '../../screens';
 import { routerStyles as s } from './Router.styles';
 
 export function Router() {
@@ -24,7 +24,9 @@ export function Router() {
 
   switch (state.draft.currentStep) {
     case 'personal_info':
+      return <PersonalInfoScreen />;
     case 'address':
+      return <AddressScreen />;
     case 'document':
     case 'review':
     case 'status':

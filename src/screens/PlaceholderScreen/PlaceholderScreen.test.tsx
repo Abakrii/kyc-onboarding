@@ -16,6 +16,7 @@ const METRICS: Metrics = {
 function makeValue(overrides: Partial<KycContextValue> = {}): KycContextValue {
   return {
     state: createInitialState(),
+    errors: [],
     editField: jest.fn(),
     next: jest.fn(),
     prev: jest.fn(),

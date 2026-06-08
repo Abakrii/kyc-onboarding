@@ -12,7 +12,7 @@
 // between storage and the service. It never logs it — caught errors are mapped
 // to generic, PII-free user messages via `toMessage`.
 
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 import {
   ERROR_CODES,
@@ -30,6 +30,7 @@ import {
 } from '../state/kycTypes';
 import { clearDraft, loadDraft, saveDraft } from '../storage/draftStorage';
 import { isEditable, isTerminal, type KycStep } from '../types/kyc';
+import { validateStep, type FieldError } from '../validation/validator';
 
 // How often to re-poll a submitted application until the service resolves it.
 const POLL_INTERVAL_MS = 1500;
@@ -57,6 +58,8 @@ export interface KycActions {
 
 export interface KycContextValue extends KycActions {
   state: KycState;
+  /** Validation errors for the current step's required fields (empty when valid). */
+  errors: FieldError[];
 }
 
 // Map any thrown error to a generic, PII-free message safe to show and (if it
@@ -239,8 +242,16 @@ export function useKyc(): KycContextValue {
     dispatch({ type: 'DISMISS_BANNER' });
   }, []);
 
+  // Validation errors for the current step. The clock read lives here (the one
+  // side-effecting layer); validateStep itself is a pure core that takes `now`.
+  const errors = useMemo(
+    () => validateStep(state.draft, state.draft.currentStep, new Date()),
+    [state.draft]
+  );
+
   return {
     state,
+    errors,
     editField,
     next,
     prev,

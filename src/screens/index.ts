@@ -3,5 +3,7 @@
 // styles and test (e.g. ./StepLayout/StepLayout.tsx + StepLayout.styles.ts +
 // StepLayout.test.tsx).
 
+export { AddressScreen } from './AddressScreen';
+export { PersonalInfoScreen } from './PersonalInfoScreen';
 export { PlaceholderScreen } from './PlaceholderScreen';
 export { StepLayout, type StepLayoutProps } from './StepLayout';
