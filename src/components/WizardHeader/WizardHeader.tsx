@@ -7,6 +7,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { WIZARD_STEPS, type KycStep } from '../../types/kyc';
+import type { Tone } from '../StatusBadge';
 import { wizardHeaderStyles as s } from './WizardHeader.styles';
 
 export interface WizardHeaderProps {
@@ -14,6 +15,8 @@ export interface WizardHeaderProps {
   currentStep: KycStep;
   /** Optional tap handler (e.g. to navigate back). Omit for a read-only header. */
   onStepPress?: (step: KycStep) => void;
+  /** Tints the final ("Status") node by remote outcome. 'neutral' is no tint. */
+  statusTone?: Tone;
 }
 
 type NodeState = 'done' | 'current' | 'upcoming';
@@ -30,7 +33,19 @@ const STEP_LABELS: Record<KycStep, string> = {
 
 const LAST_INDEX = WIZARD_STEPS.length - 1;
 
-export function WizardHeader({ currentStep, onStepPress }: WizardHeaderProps) {
+// Tinted circle style + glyph for the status node, by outcome tone.
+const TONE_CIRCLE = {
+  info: 'circleInfo',
+  warning: 'circleWarning',
+  success: 'circleSuccess',
+  danger: 'circleDanger',
+} as const;
+
+export function WizardHeader({
+  currentStep,
+  onStepPress,
+  statusTone,
+}: WizardHeaderProps) {
   const currentIndex = WIZARD_STEPS.indexOf(currentStep);
 
   return (
@@ -38,6 +53,11 @@ export function WizardHeader({ currentStep, onStepPress }: WizardHeaderProps) {
       {WIZARD_STEPS.map((step, i) => {
         const state: NodeState =
           i < currentIndex ? 'done' : i === currentIndex ? 'current' : 'upcoming';
+        // Tint the final node by remote outcome (overrides done/current/upcoming).
+        const tint =
+          step === 'status' && statusTone && statusTone !== 'neutral'
+            ? statusTone
+            : null;
         // Left half fills once we've reached this node; right half once the node
         // itself is completed. The end caps render nothing.
         const leftStyle =
@@ -51,6 +71,29 @@ export function WizardHeader({ currentStep, onStepPress }: WizardHeaderProps) {
               ? 'current step'
               : 'not started';
 
+        const circleStyle = tint
+          ? s[TONE_CIRCLE[tint]]
+          : state === 'done'
+            ? s.circleDone
+            : state === 'current'
+              ? s.circleCurrent
+              : s.circleUpcoming;
+        const symbolStyle =
+          tint || state === 'done'
+            ? s.symbolDone
+            : state === 'current'
+              ? s.symbolCurrent
+              : s.symbolUpcoming;
+        const glyph: string | number = tint
+          ? tint === 'success'
+            ? '✓'
+            : tint === 'danger'
+              ? '✕'
+              : i + 1
+          : state === 'done'
+            ? '✓'
+            : i + 1;
+
         return (
           <View key={step} style={s.cell}>
             <View style={s.cellRow}>
@@ -62,27 +105,9 @@ export function WizardHeader({ currentStep, onStepPress }: WizardHeaderProps) {
                 accessibilityRole="button"
                 accessibilityState={{ selected: state === 'current', disabled: !onStepPress }}
                 accessibilityLabel={`${STEP_LABELS[step]}, step ${i + 1} of ${WIZARD_STEPS.length}, ${stateLabel}`}
-                style={[
-                  s.circle,
-                  state === 'done'
-                    ? s.circleDone
-                    : state === 'current'
-                      ? s.circleCurrent
-                      : s.circleUpcoming,
-                ]}
+                style={[s.circle, circleStyle]}
               >
-                <Text
-                  style={[
-                    s.symbol,
-                    state === 'done'
-                      ? s.symbolDone
-                      : state === 'current'
-                        ? s.symbolCurrent
-                        : s.symbolUpcoming,
-                  ]}
-                >
-                  {state === 'done' ? '✓' : i + 1}
-                </Text>
+                <Text style={[s.symbol, symbolStyle]}>{glyph}</Text>
               </Pressable>
               <View style={[s.connector, rightStyle]} />
             </View>

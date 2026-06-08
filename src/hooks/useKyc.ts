@@ -14,27 +14,37 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
+import * as logger from '../lib/logger';
 import {
   ERROR_CODES,
   KycServiceError,
   fetchKycApplication,
   pollKycStatus,
+  resetKycApplication,
   saveKycDraft,
   submitKycApplication,
 } from '../services/fakeKycServices';
+import { computeBootstrap } from '../state/bootstrap';
 import { kycReducer } from '../state/kycReducer';
 import {
   createInitialState,
   type DraftPatch,
   type KycState,
 } from '../state/kycTypes';
+import { startPolling, type PollingHandle } from '../state/pollingController';
 import { firstStepForRequiredFields } from '../state/selectore';
 import { clearDraft, loadDraft, saveDraft } from '../storage/draftStorage';
 import { isEditable, isTerminal, type KycStep } from '../types/kyc';
 import { validateAll, validateStep, type FieldError } from '../validation/validator';
+import { MAX_POLLS, POLL_INTERVAL_MS } from './pollingConfig';
 
-// How often to re-poll a submitted application until the service resolves it.
-const POLL_INTERVAL_MS = 1500;
+// Injected wait for the polling controller. The real timer lives here (the one
+// side-effecting layer), keeping pollingController a pure, testable core.
+function sleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => resolve(), ms);
+  });
+}
 
 // The imperative surface a component drives the flow with. Every entry is a
 // stable callback (identities never change across renders).
@@ -98,6 +108,8 @@ export function useKyc(): KycContextValue {
   const hydratedRef = useRef(false);
   // Which async op to re-run on `retry`.
   const lastOpRef = useRef<'hydrate' | 'submit'>('hydrate');
+  // The active polling loop, so `reset` can cancel it.
+  const pollHandleRef = useRef<PollingHandle | null>(null);
 
   // ── Bootstrap: fetch the server application + load the local draft ──
   const bootstrap = useCallback(async () => {
@@ -111,13 +123,16 @@ export function useKyc(): KycContextValue {
       if (!mountedRef.current) {
         return;
       }
-      // TODO(reconcile): merge `localDraft` into the hydrated state when the
-      // server is no further along than the draft. For now the server
-      // application is authoritative; the draft is loaded so the wiring is in
-      // place. Until this lands, the first post-hydrate persist mirrors the
-      // server draft rather than a richer local one.
-      void localDraft;
-      dispatch({ type: 'HYDRATE_SUCCESS', application });
+      // Reconcile the server copy with the locally-cached draft (pure cores) and
+      // resume on the right step. This also fixes the post-hydrate persist: the
+      // hydrated draft is the merged one, so local edits are preserved.
+      const plan = computeBootstrap(localDraft, application);
+      logger.log('kyc: hydrated', { status: plan.application.status });
+      dispatch({
+        type: 'HYDRATE_SUCCESS',
+        application: plan.application,
+        banner: plan.banner ?? undefined,
+      });
       hydratedRef.current = true;
     } catch (error) {
       if (!mountedRef.current) {
@@ -125,6 +140,7 @@ export function useKyc(): KycContextValue {
       }
       // Leave hydratedRef false on failure so we don't persist (and clobber) the
       // stored draft over a transient fetch error.
+      logger.log('kyc: hydrate failed', { message: toMessage(error) });
       dispatch({ type: 'HYDRATE_FAILURE', error: toMessage(error) });
     }
   }, []);
@@ -146,39 +162,38 @@ export function useKyc(): KycContextValue {
   }, [state.draft, state.remoteStatus]);
 
   // ── Poll a submitted application until the service resolves it ──
+  // Bounded by the pollingController (settles / caps / cancels). A status change
+  // re-runs this effect and cancels the previous loop via cleanup.
   useEffect(() => {
     if (state.remoteStatus !== 'submitted') {
       return;
     }
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const tick = async (): Promise<void> => {
-      dispatch({ type: 'POLL_START' });
-      try {
-        const application = await pollKycStatus();
-        if (cancelled || !mountedRef.current) {
-          return;
+    dispatch({ type: 'POLL_START' });
+    const handle = startPolling({
+      poll: pollKycStatus,
+      isSettled: (application) => application.status !== 'submitted',
+      onResult: (application) => {
+        if (mountedRef.current) {
+          dispatch({ type: 'POLL_RESULT', application });
         }
-        dispatch({ type: 'POLL_RESULT', application });
-      } catch (error) {
-        if (cancelled || !mountedRef.current) {
-          return;
+      },
+      onError: (error) => {
+        if (mountedRef.current) {
+          logger.log('kyc: poll failed', { message: toMessage(error) });
+          dispatch({ type: 'POLL_FAILURE', error: toMessage(error) });
         }
-        dispatch({ type: 'POLL_FAILURE', error: toMessage(error) });
-      }
-      // Keep polling while we're still submitted; a status change re-runs this
-      // effect and cancels the chain via cleanup.
-      if (!cancelled) {
-        timer = setTimeout(() => void tick(), POLL_INTERVAL_MS);
-      }
-    };
-
-    void tick();
+      },
+      maxPolls: MAX_POLLS,
+      intervalMs: POLL_INTERVAL_MS,
+      sleep,
+    });
+    pollHandleRef.current = handle;
 
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      handle.cancel();
+      if (pollHandleRef.current === handle) {
+        pollHandleRef.current = null;
+      }
     };
   }, [state.remoteStatus]);
 
@@ -195,6 +210,7 @@ export function useKyc(): KycContextValue {
       if (!mountedRef.current) {
         return;
       }
+      logger.log('kyc: save failed', { message: toMessage(error) });
       dispatch({ type: 'SAVE_FAILURE', error: toMessage(error) });
       return;
     }
@@ -208,11 +224,13 @@ export function useKyc(): KycContextValue {
       if (!mountedRef.current) {
         return;
       }
+      logger.log('kyc: submitted', { status: application.status });
       dispatch({ type: 'SUBMIT_SUCCESS', application });
     } catch (error) {
       if (!mountedRef.current) {
         return;
       }
+      logger.log('kyc: submit failed', { message: toMessage(error) });
       dispatch({ type: 'SUBMIT_FAILURE', error: toMessage(error) });
     }
   }, []);
@@ -262,9 +280,22 @@ export function useKyc(): KycContextValue {
   }, [bootstrap, submit]);
 
   const reset = useCallback(() => {
-    void clearDraft();
-    void bootstrap();
-  }, [bootstrap]);
+    // Start over: cancel any in-flight polling, drop to a fresh idle state
+    // immediately, then wipe the backend + local cache in the background.
+    pollHandleRef.current?.cancel();
+    pollHandleRef.current = null;
+    lastOpRef.current = 'hydrate';
+    logger.log('kyc: reset');
+    dispatch({ type: 'RESET' });
+    void (async () => {
+      try {
+        await resetKycApplication();
+        await clearDraft();
+      } catch (error) {
+        logger.log('kyc: reset cleanup failed', { message: toMessage(error) });
+      }
+    })();
+  }, []);
 
   const dismissBanner = useCallback(() => {
     dispatch({ type: 'DISMISS_BANNER' });

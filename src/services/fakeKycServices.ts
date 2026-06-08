@@ -45,6 +45,8 @@ export class KycServiceError extends Error {
 
 const STORAGE_KEY = 'kyc:fake-server';
 const DEFAULT_DELAY_MS = 350;
+// Mutable so tests can shrink latency to run the full flow fast (see __setDelay).
+let delayMs = DEFAULT_DELAY_MS;
 const POLLS_UNTIL_RESOLUTION = 2;
 const APPLICATION_ID = 'kyc-local-application';
 const EPOCH = '1970-01-01T00:00:00.000Z';
@@ -73,7 +75,7 @@ let inFlightSubmit: Promise<KycApplication> | null = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function delay(ms: number = DEFAULT_DELAY_MS): Promise<void> {
+function delay(ms: number = delayMs): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(() => resolve(), ms);
   });
@@ -275,13 +277,30 @@ export async function pollKycStatus(): Promise<KycApplication> {
   return clone(resolved);
 }
 
+// Start over: wipe the server back to a fresh, never-started application. The
+// production counterpart of __reset — public, so the client's "Start over" can
+// reset the backend (not just a test hook).
+export async function resetKycApplication(): Promise<KycApplication> {
+  await delay();
+  const fresh = freshServer();
+  inFlightSubmit = null;
+  await persist(fresh);
+  return clone(fresh.application);
+}
+
 // ── Test hooks ────────────────────────────────────────────────────────────────
 
 // Clear all module + mirrored state. Await before each test for isolation.
 export async function __reset(): Promise<void> {
   memory = null;
   inFlightSubmit = null;
+  delayMs = DEFAULT_DELAY_MS;
   await AsyncStorage.removeItem(STORAGE_KEY);
+}
+
+// Override the simulated latency (ms). Tests set this to 0 to run instantly.
+export function __setDelay(ms: number): void {
+  delayMs = ms;
 }
 
 // Synchronously inspect the in-memory server snapshot without touching storage

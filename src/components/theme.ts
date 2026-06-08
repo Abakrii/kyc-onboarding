@@ -11,6 +11,8 @@ export const colors = {
   muted: '#6b7280',
   border: '#d1d5db',
   error: '#dc2626',
+  success: '#16a34a',
+  warning: '#d97706',
   background: '#ffffff',
   disabled: '#9ca3af',
   disabledBackground: '#e5e7eb',

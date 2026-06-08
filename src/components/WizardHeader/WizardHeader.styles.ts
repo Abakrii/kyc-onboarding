@@ -63,6 +63,23 @@ export const wizardHeaderStyles = StyleSheet.create({
     backgroundColor: colors.background,
     borderColor: colors.border,
   },
+  // Outcome tints for the status node (driven by remoteStatus).
+  circleInfo: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  circleWarning: {
+    backgroundColor: colors.warning,
+    borderColor: colors.warning,
+  },
+  circleSuccess: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  circleDanger: {
+    backgroundColor: colors.error,
+    borderColor: colors.error,
+  },
   symbol: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,

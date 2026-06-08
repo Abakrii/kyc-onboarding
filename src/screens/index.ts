@@ -8,4 +8,5 @@ export { DocumentScreen } from './DocumentScreen';
 export { PersonalInfoScreen } from './PersonalInfoScreen';
 export { PlaceholderScreen } from './PlaceholderScreen';
 export { ReviewScreen } from './ReviewScreen';
+export { StatusScreen } from './StatusScreen';
 export { StepLayout, type StepLayoutProps } from './StepLayout';

@@ -50,7 +50,7 @@ export interface KycState {
 export type Action =
   // Hydration / initial sync from the service.
   | { type: 'HYDRATE_START' }
-  | { type: 'HYDRATE_SUCCESS'; application: KycApplication }
+  | { type: 'HYDRATE_SUCCESS'; application: KycApplication; banner?: string }
   | { type: 'HYDRATE_FAILURE'; error: string }
   // Editing + wizard navigation.
   | { type: 'EDIT_DRAFT'; patch: DraftPatch }
@@ -70,7 +70,9 @@ export type Action =
   | { type: 'POLL_RESULT'; application: KycApplication }
   | { type: 'POLL_FAILURE'; error: string }
   // UI.
-  | { type: 'DISMISS_BANNER' };
+  | { type: 'DISMISS_BANNER' }
+  // Start over: wipe back to a fresh, idle state.
+  | { type: 'RESET' };
 
 export function createInitialState(): KycState {
   return {

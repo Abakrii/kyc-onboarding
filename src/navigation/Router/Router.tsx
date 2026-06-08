@@ -2,7 +2,7 @@
 // (via context) and renders exactly one screen: a centred spinner while the
 // initial state is loading, otherwise the screen for the current wizard step.
 // Switching on `currentStep` (the uiPhase axis) keeps navigation a pure function
-// of state. Steps without a real screen yet fall back to PlaceholderScreen.
+// of state.
 
 import { ActivityIndicator, View } from 'react-native';
 
@@ -12,8 +12,8 @@ import {
   AddressScreen,
   DocumentScreen,
   PersonalInfoScreen,
-  PlaceholderScreen,
   ReviewScreen,
+  StatusScreen,
 } from '../../screens';
 import { routerStyles as s } from './Router.styles';
 
@@ -38,8 +38,7 @@ export function Router() {
     case 'review':
       return <ReviewScreen />;
     case 'status':
-      // TODO: swap in the real status screen when it is built.
-      return <PlaceholderScreen />;
+      return <StatusScreen />;
     default: {
       // Exhaustiveness guard: a new KycStep won't compile until it's routed.
       const exhaustive: never = state.draft.currentStep;

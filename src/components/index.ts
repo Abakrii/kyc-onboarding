@@ -9,6 +9,12 @@ export {
   type OptionGroupProps,
   type OptionGroupOption,
 } from './OptionGroup';
+export {
+  StatusBadge,
+  statusTone,
+  type StatusBadgeProps,
+  type Tone,
+} from './StatusBadge';
 export { TextField, type TextFieldProps } from './TextField';
 export { WizardHeader, type WizardHeaderProps } from './WizardHeader';
 export { colors, spacing, radius, fontSize, fontWeight, theme } from './theme';

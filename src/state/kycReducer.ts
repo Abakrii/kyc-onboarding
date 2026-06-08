@@ -17,7 +17,12 @@ import {
   nextStep,
   prevStep,
 } from './selectore';
-import type { Action, KycState, UiPhase } from './kycTypes';
+import {
+  createInitialState,
+  type Action,
+  type KycState,
+  type UiPhase,
+} from './kycTypes';
 
 // User-facing banners. No PII — generic guidance only.
 export const MORE_INFO_BANNER =
@@ -105,13 +110,17 @@ export function kycReducer(state: KycState, action: Action): KycState {
     case 'HYDRATE_START':
       return { ...state, uiPhase: 'loading', error: null };
 
-    case 'HYDRATE_SUCCESS':
+    case 'HYDRATE_SUCCESS': {
       // Initial sync is authoritative: adopt the server status directly rather
-      // than as a guarded in-session transition.
+      // than as a guarded in-session transition. An optional reconcile banner
+      // (e.g. discarded local edits) overrides any banner applyServer set.
+      const next = applyServer(state, action.application, action.application.status);
       return {
-        ...applyServer(state, action.application, action.application.status),
+        ...next,
         uiPhase: 'idle',
+        banner: action.banner ?? next.banner,
       };
+    }
 
     case 'HYDRATE_FAILURE':
       return { ...state, uiPhase: 'error', error: action.error };
@@ -213,9 +222,10 @@ export function kycReducer(state: KycState, action: Action): KycState {
     case 'POLL_RESULT': {
       const remoteStatus = guarded(state.remoteStatus, action.application.status);
       const next = applyServer(state, action.application, remoteStatus);
-      // Still submitted → keep polling; any resolution settles to idle.
+      // Still submitted → keep polling; any resolution settles to idle. A
+      // successful result supersedes any prior poll error.
       const uiPhase: UiPhase = remoteStatus === 'submitted' ? 'polling' : 'idle';
-      return { ...next, uiPhase };
+      return { ...next, uiPhase, error: null };
     }
 
     case 'POLL_FAILURE':
@@ -223,6 +233,11 @@ export function kycReducer(state: KycState, action: Action): KycState {
 
     case 'DISMISS_BANNER':
       return { ...state, banner: null };
+
+    case 'RESET':
+      // Start over: a fresh application, but settled (idle) rather than the
+      // initial loading phase since there's nothing to fetch.
+      return { ...createInitialState(), uiPhase: 'idle' };
 
     default: {
       const exhaustive: never = action;
