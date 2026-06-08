@@ -54,6 +54,17 @@ export interface KycApplication {
   updatedAt: string;
 }
 
+// ── Derived shapes ───────────────────────────────────────────────────────────
+
+// The editable slice of an application — the "draft" the user fills in. The
+// service-owned fields (id, status, rejectionReason, requiredFields, updatedAt)
+// are deliberately excluded. Shared by the reducer, the draft storage cache, and
+// the side-effecting hook so they all speak one draft shape.
+export type KycDraft = Pick<
+  KycApplication,
+  'currentStep' | 'personalInfo' | 'address' | 'document'
+>;
+
 // ── Wizard ordering (the uiPhase axis) ──────────────────────────────────────
 
 // Canonical, ordered list of every phase the UI can show. Index into this for

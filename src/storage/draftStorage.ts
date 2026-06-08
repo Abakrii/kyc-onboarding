@@ -22,15 +22,13 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { KycApplication } from '../types/kyc';
+import type { KycDraft } from '../types/kyc';
 
-// The editable slice of the application — the "draft" snapshot. Distinct from
-// the service's KycDraftInput (a partial patch): this is the full resumable
-// state, with the wizard position the user left off at.
-export type KycDraft = Pick<
-  KycApplication,
-  'currentStep' | 'personalInfo' | 'address' | 'document'
->;
+// Re-exported for callers that import the draft shape from the storage module.
+// The canonical definition lives in the types core. Distinct from the service's
+// KycDraftInput (a partial patch): KycDraft is the full resumable snapshot,
+// including the wizard position the user left off at.
+export type { KycDraft };
 
 const STORAGE_KEY = 'kyc:draft';
 
