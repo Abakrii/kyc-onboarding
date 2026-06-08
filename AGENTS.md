@@ -37,6 +37,32 @@ into that single hook; they do not run effects of their own. Adding a second
 side-effecting hook is a smell — extend the one we have or move the logic into
 a pure core.
 
+### Component folder structure
+
+Every FE component lives in **its own folder** under `src/components/`, named
+after the component. The folder co-locates exactly three things plus a barrel:
+
+- `Name.tsx` — the component (declarative; no inline styles).
+- `Name.styles.ts` — its `StyleSheet`, built from the shared theme tokens. The
+  `StyleSheet.create` call lives here, never inside the component.
+- `Name.test.tsx` — its test, sitting next to the code it covers.
+- `index.ts` — re-exports the component (and its prop types).
+
+```
+src/components/
+  theme.ts            ← shared design tokens (not a component)
+  index.ts            ← top-level barrel
+  Button/
+    Button.tsx
+    Button.styles.ts
+    Button.test.tsx
+    index.ts
+```
+
+Shared, non-component modules (e.g. `theme.ts`) stay as flat files at the
+`src/components/` root. Consumers import from the top-level barrel
+(`../components`), not from individual component folders.
+
 ### Two state axes: `remoteStatus` vs `uiPhase`
 
 State is modeled along two **orthogonal** axes — never collapse them into one
