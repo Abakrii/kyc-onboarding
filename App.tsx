@@ -1,20 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { KycProvider } from './src/context/kycProvider';
+import { Router } from './src/navigation/Router';
+
+// App root: SafeAreaProvider (so screens can read insets) wraps the single
+// KycProvider (the one side-effecting hook instance), and the Router renders the
+// current screen. Everything below here is declarative.
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Testing the kyc app!!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <KycProvider>
+        <Router />
+        <StatusBar style="auto" />
+      </KycProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

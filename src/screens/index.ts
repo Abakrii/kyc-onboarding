@@ -3,4 +3,5 @@
 // styles and test (e.g. ./StepLayout/StepLayout.tsx + StepLayout.styles.ts +
 // StepLayout.test.tsx).
 
+export { PlaceholderScreen } from './PlaceholderScreen';
 export { StepLayout, type StepLayoutProps } from './StepLayout';
